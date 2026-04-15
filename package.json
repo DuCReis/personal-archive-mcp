@@ -1,0 +1,31 @@
+{
+  "name": "personal-archive-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Personal Archive — 48 tools for AI agents to manage boards, items, notes, bookmarks, goals, archives, templates, automations.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "personal-archive-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prepare": "tsc"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
