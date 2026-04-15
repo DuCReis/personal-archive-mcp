@@ -3,43 +3,70 @@ import { z } from 'zod';
 import { apiCall, textResult } from '../api.js';
 
 export function registerBoardTools(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'list_boards',
-    'List all boards with item counts and group counts',
-    {},
+    {
+      title: 'List Boards',
+      description: 'List all boards the user owns with item counts and group counts.',
+      inputSchema: {},
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
     async () => {
       const data = await apiCall('/boards') as { boards: unknown[] };
       return textResult(data.boards);
     }
   );
 
-  server.tool(
+  server.registerTool(
     'get_board',
-    'Get a board with all its items, groups, and columns',
-    { boardId: z.string().describe('The board ID') },
+    {
+      title: 'Get Board',
+      description: 'Get a board with all its items, groups, and columns.',
+      inputSchema: { boardId: z.string().describe('The board ID') },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
     async ({ boardId }) => {
       const data = await apiCall(`/boards/${boardId}`) as { board: unknown };
       return textResult(data.board);
     }
   );
 
-  server.tool(
+  server.registerTool(
     'create_board',
-    'Create a new board',
     {
-      name: z.string().describe('Board name'),
-      description: z.string().optional().describe('Board description'),
-      color: z.string().optional().describe('Board color hex (e.g. #7170ff)'),
-      columns: z.array(z.object({
-        id: z.string(),
-        type: z.string().describe('Column type: status|date|priority|tags|number|text|checkbox|person|url|rating|progress'),
-        title: z.string(),
-        options: z.array(z.object({ label: z.string(), color: z.string() })).optional(),
-      })).optional().describe('Column definitions'),
-      groups: z.array(z.object({
-        name: z.string().describe('Group name'),
-        color: z.string().optional().describe('Group color hex'),
-      })).optional().describe('Initial groups to create with the board'),
+      title: 'Create Board',
+      description: 'Create a new board with optional columns and initial groups.',
+      inputSchema: {
+        name: z.string().describe('Board name'),
+        description: z.string().optional().describe('Board description'),
+        color: z.string().optional().describe('Board color hex (e.g. #7170ff)'),
+        columns: z.array(z.object({
+          id: z.string(),
+          type: z.string().describe('Column type: status|date|priority|tags|number|text|checkbox|person|url|rating|progress'),
+          title: z.string(),
+          options: z.array(z.object({ label: z.string(), color: z.string() })).optional(),
+        })).optional().describe('Column definitions'),
+        groups: z.array(z.object({
+          name: z.string().describe('Group name'),
+          color: z.string().optional().describe('Group color hex'),
+        })).optional().describe('Initial groups to create with the board'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async ({ name, description, color, columns, groups }) => {
       const body: Record<string, unknown> = { name };
@@ -74,15 +101,24 @@ export function registerBoardTools(server: McpServer) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'update_board',
-    'Update a board (name, description, color, columns, tags)',
     {
-      boardId: z.string().describe('The board ID'),
-      name: z.string().optional().describe('New name'),
-      description: z.string().optional().describe('New description'),
-      color: z.string().optional().describe('New color hex'),
-      tags: z.array(z.string()).optional().describe('Board-level tags'),
+      title: 'Update Board',
+      description: 'Update a board (name, description, color, tags).',
+      inputSchema: {
+        boardId: z.string().describe('The board ID'),
+        name: z.string().optional().describe('New name'),
+        description: z.string().optional().describe('New description'),
+        color: z.string().optional().describe('New color hex'),
+        tags: z.array(z.string()).optional().describe('Board-level tags'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async ({ boardId, name, description, color, tags }) => {
       const body: Record<string, unknown> = {};
@@ -98,79 +134,40 @@ export function registerBoardTools(server: McpServer) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'delete_board',
-    'Delete a board and all its items',
-    { boardId: z.string().describe('The board ID to delete') },
+    {
+      title: 'Delete Board',
+      description: 'Delete a board and all its items. This is irreversible.',
+      inputSchema: { boardId: z.string().describe('The board ID to delete') },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
     async ({ boardId }) => {
       await apiCall(`/boards/${boardId}`, { method: 'DELETE' });
       return textResult({ message: 'Board deleted' });
     }
   );
 
-  // --- Group Tools ---
-
-  server.tool(
-    'create_group',
-    'Create a new group in a board',
-    {
-      boardId: z.string().describe('The board ID'),
-      name: z.string().describe('Group name'),
-      color: z.string().optional().describe('Group color hex'),
-    },
-    async ({ boardId, name, color }) => {
-      const body: Record<string, unknown> = { name };
-      if (color) body.color = color;
-      const data = await apiCall(`/boards/${boardId}/groups`, {
-        method: 'POST',
-        body: JSON.stringify(body),
-      }) as { group: { id: string; name: string } };
-      return textResult({ message: `Created group "${name}"`, id: data.group?.id });
-    }
-  );
-
-  server.tool(
-    'update_group',
-    'Update a group (name, color, position)',
-    {
-      boardId: z.string().describe('The board ID'),
-      groupId: z.string().describe('The group ID'),
-      name: z.string().optional().describe('New name'),
-      color: z.string().optional().describe('New color hex'),
-      position: z.number().optional().describe('New position index'),
-    },
-    async ({ boardId, groupId, name, color, position }) => {
-      const body: Record<string, unknown> = {};
-      if (name) body.name = name;
-      if (color) body.color = color;
-      if (position !== undefined) body.position = position;
-      const data = await apiCall(`/boards/${boardId}/groups/${groupId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(body),
-      }) as { group: { id: string; name: string } };
-      return textResult({ message: `Updated group "${data.group?.name}"`, group: data.group });
-    }
-  );
-
-  server.tool(
-    'delete_group',
-    'Delete a group from a board',
-    {
-      boardId: z.string().describe('The board ID'),
-      groupId: z.string().describe('The group ID to delete'),
-    },
-    async ({ boardId, groupId }) => {
-      await apiCall(`/boards/${boardId}/groups/${groupId}`, { method: 'DELETE' });
-      return textResult({ message: 'Group deleted' });
-    }
-  );
-
   // --- Summary Tool ---
 
-  server.tool(
+  server.registerTool(
     'get_board_summary',
-    'Get a compact overview of a board: item counts by status, group, and priority — without full item details',
-    { boardId: z.string().describe('The board ID') },
+    {
+      title: 'Get Board Summary',
+      description: 'Get a compact overview of a board: item counts by status, group, and priority — without full item details.',
+      inputSchema: { boardId: z.string().describe('The board ID') },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
     async ({ boardId }) => {
       const data = await apiCall(`/boards/${boardId}`) as {
         board: {

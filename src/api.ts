@@ -17,6 +17,22 @@ export async function apiCall(path: string, options: RequestInit = {}): Promise<
   return res.json();
 }
 
+/**
+ * Wraps a result payload for MCP tool responses. Returns both the text
+ * content (for clients that don't support structured output) and
+ * structuredContent (for modern clients that can render it natively).
+ *
+ * The structuredContent is always wrapped in an object because the MCP
+ * spec requires structuredContent to be an object. If the caller passes
+ * a primitive/array, it's wrapped under a `result` key.
+ */
 export function textResult(data: unknown) {
-  return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+  const structured: Record<string, unknown> =
+    data && typeof data === 'object' && !Array.isArray(data)
+      ? (data as Record<string, unknown>)
+      : { result: data };
+  return {
+    content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
+    structuredContent: structured,
+  };
 }

@@ -3,11 +3,20 @@ import { z } from 'zod';
 import { apiCall, textResult } from '../api.js';
 
 export function registerArchiveTools(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'list_archive_folders',
-    'List archive folders (optionally filtered by board). Each folder includes its item count.',
     {
-      boardId: z.string().optional().describe('Only list folders for this board'),
+      title: 'List Archive Folders',
+      description: 'List archive folders (optionally filtered by board). Each folder includes its item count.',
+      inputSchema: {
+        boardId: z.string().optional().describe('Only list folders for this board'),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async ({ boardId }) => {
       const qs = boardId ? `?boardId=${boardId}` : '';
@@ -16,14 +25,23 @@ export function registerArchiveTools(server: McpServer) {
     },
   );
 
-  server.tool(
+  server.registerTool(
     'create_archive_folder',
-    'Create a new archive folder for organizing archived items.',
     {
-      name: z.string().describe('Folder name'),
-      color: z.string().optional().describe('Folder color hex (e.g. #7170ff)'),
-      description: z.string().optional().describe('Optional description'),
-      boardId: z.string().optional().describe('Scope to a specific board (omit for global folder)'),
+      title: 'Create Archive Folder',
+      description: 'Create a new archive folder for organizing archived items.',
+      inputSchema: {
+        name: z.string().describe('Folder name'),
+        color: z.string().optional().describe('Folder color hex (e.g. #7170ff)'),
+        description: z.string().optional().describe('Optional description'),
+        boardId: z.string().optional().describe('Scope to a specific board (omit for global folder)'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async ({ name, color, description, boardId }) => {
       const body: Record<string, unknown> = { name };
@@ -38,14 +56,23 @@ export function registerArchiveTools(server: McpServer) {
     },
   );
 
-  server.tool(
+  server.registerTool(
     'update_archive_folder',
-    'Update an archive folder (name, color, description).',
     {
-      folderId: z.string().describe('Folder ID'),
-      name: z.string().optional().describe('New name'),
-      color: z.string().optional().describe('New color hex'),
-      description: z.string().optional().describe('New description'),
+      title: 'Update Archive Folder',
+      description: 'Update an archive folder (name, color, description).',
+      inputSchema: {
+        folderId: z.string().describe('Folder ID'),
+        name: z.string().optional().describe('New name'),
+        color: z.string().optional().describe('New color hex'),
+        description: z.string().optional().describe('New description'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async ({ folderId, name, color, description }) => {
       const body: Record<string, unknown> = {};
@@ -60,12 +87,21 @@ export function registerArchiveTools(server: McpServer) {
     },
   );
 
-  server.tool(
+  server.registerTool(
     'delete_archive_folder',
-    'Delete an archive folder. Optionally move its items to another folder.',
     {
-      folderId: z.string().describe('Folder ID to delete'),
-      moveTo: z.string().optional().describe('Move items to this folder ID (otherwise items become unfiled)'),
+      title: 'Delete Archive Folder',
+      description: 'Delete an archive folder. Optionally move its items to another folder.',
+      inputSchema: {
+        folderId: z.string().describe('Folder ID to delete'),
+        moveTo: z.string().optional().describe('Move items to this folder ID (otherwise items become unfiled)'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async ({ folderId, moveTo }) => {
       const qs = moveTo ? `?move=${moveTo}` : '';
@@ -74,12 +110,21 @@ export function registerArchiveTools(server: McpServer) {
     },
   );
 
-  server.tool(
+  server.registerTool(
     'archive_item',
-    'Archive an item (soft delete) and optionally place it into an archive folder.',
     {
-      itemId: z.string().describe('Item ID to archive'),
-      folderId: z.string().optional().describe('Target archive folder (omit for "no folder")'),
+      title: 'Archive Item',
+      description: 'Archive an item (soft delete) and optionally place it into an archive folder.',
+      inputSchema: {
+        itemId: z.string().describe('Item ID to archive'),
+        folderId: z.string().optional().describe('Target archive folder (omit for "no folder")'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async ({ itemId, folderId }) => {
       const body: Record<string, unknown> = {};
@@ -92,12 +137,21 @@ export function registerArchiveTools(server: McpServer) {
     },
   );
 
-  server.tool(
+  server.registerTool(
     'list_archived_items',
-    'List archived items, optionally filtered by board and/or folder.',
     {
-      boardId: z.string().optional().describe('Only return items from this board'),
-      folderId: z.string().optional().describe('Only return items in this folder (use "none" for items with no folder)'),
+      title: 'List Archived Items',
+      description: 'List archived items, optionally filtered by board and/or folder.',
+      inputSchema: {
+        boardId: z.string().optional().describe('Only return items from this board'),
+        folderId: z.string().optional().describe('Only return items in this folder (use "none" for items with no folder)'),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async ({ boardId, folderId }) => {
       const params = new URLSearchParams();

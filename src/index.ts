@@ -2,7 +2,9 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerBoardTools } from './tools/boards.js';
+import { registerGroupTools } from './tools/groups.js';
 import { registerItemTools } from './tools/items.js';
+import { registerItemBulkTools } from './tools/itemsBulk.js';
 import { registerNoteTools } from './tools/notes.js';
 import { registerBookmarkTools } from './tools/bookmarks.js';
 import { registerDashboardTools } from './tools/dashboard.js';
@@ -19,7 +21,9 @@ const server = new McpServer({
 });
 
 registerBoardTools(server);
+registerGroupTools(server);
 registerItemTools(server);
+registerItemBulkTools(server);
 registerNoteTools(server);
 registerBookmarkTools(server);
 registerDashboardTools(server);

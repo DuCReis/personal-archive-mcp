@@ -3,16 +3,27 @@ import { z } from 'zod';
 import { apiCall, textResult } from '../api.js';
 
 export function registerBookmarkTools(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'list_bookmarks',
-    'List bookmarks with optional tag filter',
     {
-      tag: z.string().optional().describe('Filter bookmarks by this tag'),
-      take: z.number().optional().describe('Number of bookmarks to return (default 50, max 200)'),
+      title: 'List Bookmarks',
+      description: 'List bookmarks with optional tag filter. Supports pagination.',
+      inputSchema: {
+        tag: z.string().optional().describe('Filter bookmarks by this tag'),
+        skip: z.number().int().min(0).optional().describe('Number of results to skip for pagination (default 0)'),
+        take: z.number().int().min(1).max(200).optional().describe('Number of bookmarks to return (default 50, max 200)'),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
-    async ({ tag, take }) => {
-      const limit = Math.min(take || 50, 200);
-      const data = await apiCall(`/bookmarks?take=${limit}`) as {
+    async ({ tag, skip, take }) => {
+      const limit = Math.min(take ?? 50, 200);
+      const offset = Math.max(skip ?? 0, 0);
+      const data = await apiCall(`/bookmarks?take=${limit}&skip=${offset}`) as {
         bookmarks: Array<{ id: string; title: string; url: string; tags: string[] }>;
       };
       let bookmarks = data.bookmarks;
@@ -22,17 +33,26 @@ export function registerBookmarkTools(server: McpServer) {
           b.tags.some((t) => t.toLowerCase().includes(lowerTag))
         );
       }
-      return textResult(bookmarks);
+      return textResult({ count: bookmarks.length, skip: offset, take: limit, bookmarks });
     }
   );
 
-  server.tool(
+  server.registerTool(
     'create_bookmark',
-    'Save a new bookmark',
     {
-      url: z.string().describe('The bookmark URL'),
-      title: z.string().optional().describe('The bookmark title (auto-detected if omitted)'),
-      tags: z.array(z.string()).optional().describe('Tags for the bookmark'),
+      title: 'Create Bookmark',
+      description: 'Save a new bookmark.',
+      inputSchema: {
+        url: z.string().describe('The bookmark URL'),
+        title: z.string().optional().describe('The bookmark title (auto-detected if omitted)'),
+        tags: z.array(z.string()).optional().describe('Tags for the bookmark'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async ({ url, title, tags }) => {
       const body: Record<string, unknown> = { url, title: title || url };
@@ -45,15 +65,24 @@ export function registerBookmarkTools(server: McpServer) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'update_bookmark',
-    'Update an existing bookmark',
     {
-      bookmarkId: z.string().describe('The bookmark ID'),
-      title: z.string().optional().describe('New title'),
-      url: z.string().optional().describe('New URL'),
-      tags: z.array(z.string()).optional().describe('New tags (replaces all)'),
-      description: z.string().optional().describe('New description'),
+      title: 'Update Bookmark',
+      description: 'Update an existing bookmark.',
+      inputSchema: {
+        bookmarkId: z.string().describe('The bookmark ID'),
+        title: z.string().optional().describe('New title'),
+        url: z.string().optional().describe('New URL'),
+        tags: z.array(z.string()).optional().describe('New tags (replaces all)'),
+        description: z.string().optional().describe('New description'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async ({ bookmarkId, title, url, tags, description }) => {
       const body: Record<string, unknown> = {};
@@ -69,10 +98,19 @@ export function registerBookmarkTools(server: McpServer) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'delete_bookmark',
-    'Delete a bookmark',
-    { bookmarkId: z.string().describe('The bookmark ID to delete') },
+    {
+      title: 'Delete Bookmark',
+      description: 'Delete a bookmark permanently. This is irreversible.',
+      inputSchema: { bookmarkId: z.string().describe('The bookmark ID to delete') },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
     async ({ bookmarkId }) => {
       await apiCall(`/bookmarks/${bookmarkId}`, { method: 'DELETE' });
       return textResult({ message: 'Bookmark deleted' });

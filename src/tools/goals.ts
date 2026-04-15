@@ -3,27 +3,45 @@ import { z } from 'zod';
 import { apiCall, textResult } from '../api.js';
 
 export function registerGoalTools(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'list_goals',
-    'List all goals',
-    {},
+    {
+      title: 'List Goals',
+      description: 'List all goals.',
+      inputSchema: {},
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
     async () => {
       const data = await apiCall('/goals') as { goals: unknown[] };
       return textResult(data.goals);
     }
   );
 
-  server.tool(
+  server.registerTool(
     'create_goal',
-    'Create a new goal',
     {
-      title: z.string().describe('Goal title'),
-      description: z.string().optional().describe('Goal description'),
-      targetValue: z.number().optional().describe('Target value to reach'),
-      unit: z.string().optional().describe('Unit of measurement (e.g. %, tasks, hours)'),
-      deadline: z.string().optional().describe('Deadline (ISO 8601 date)'),
-      color: z.string().optional().describe('Color hex'),
-      boardId: z.string().optional().describe('Link to a board'),
+      title: 'Create Goal',
+      description: 'Create a new goal, optionally linked to a board.',
+      inputSchema: {
+        title: z.string().describe('Goal title'),
+        description: z.string().optional().describe('Goal description'),
+        targetValue: z.number().optional().describe('Target value to reach'),
+        unit: z.string().optional().describe('Unit of measurement (e.g. %, tasks, hours)'),
+        deadline: z.string().optional().describe('Deadline (ISO 8601 date)'),
+        color: z.string().optional().describe('Color hex'),
+        boardId: z.string().optional().describe('Link to a board'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async ({ title, description, targetValue, unit, deadline, color, boardId }) => {
       const body: Record<string, unknown> = { title };
@@ -41,16 +59,25 @@ export function registerGoalTools(server: McpServer) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'update_goal',
-    'Update an existing goal',
     {
-      goalId: z.string().describe('The goal ID'),
-      title: z.string().optional().describe('New title'),
-      description: z.string().optional().describe('New description'),
-      currentValue: z.number().optional().describe('Current progress value'),
-      targetValue: z.number().optional().describe('Target value'),
-      completed: z.boolean().optional().describe('Mark as completed'),
+      title: 'Update Goal',
+      description: 'Update an existing goal (progress, target, metadata, or completion state).',
+      inputSchema: {
+        goalId: z.string().describe('The goal ID'),
+        title: z.string().optional().describe('New title'),
+        description: z.string().optional().describe('New description'),
+        currentValue: z.number().optional().describe('Current progress value'),
+        targetValue: z.number().optional().describe('Target value'),
+        completed: z.boolean().optional().describe('Mark as completed'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async ({ goalId, title, description, currentValue, targetValue, completed }) => {
       const body: Record<string, unknown> = {};
@@ -67,10 +94,19 @@ export function registerGoalTools(server: McpServer) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'delete_goal',
-    'Delete a goal',
-    { goalId: z.string().describe('The goal ID to delete') },
+    {
+      title: 'Delete Goal',
+      description: 'Delete a goal permanently. This is irreversible.',
+      inputSchema: { goalId: z.string().describe('The goal ID to delete') },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
     async ({ goalId }) => {
       await apiCall(`/goals/${goalId}`, { method: 'DELETE' });
       return textResult({ message: 'Goal deleted' });
