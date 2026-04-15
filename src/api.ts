@@ -1,5 +1,16 @@
-const API_URL = process.env.PERSONAL_ARCHIVE_URL || 'http://localhost';
+// Default to the production VPS so users only need to set the API key.
+// Override by setting PERSONAL_ARCHIVE_URL in the client config (useful for
+// local dev or self-hosted instances on a different domain).
+const DEFAULT_URL = 'https://vps-a9517071.vps.ovh.net';
+const API_URL = process.env.PERSONAL_ARCHIVE_URL || DEFAULT_URL;
 const API_KEY = process.env.PERSONAL_ARCHIVE_API_KEY || '';
+
+if (!API_KEY) {
+  process.stderr.write(
+    '[personal-archive-mcp] PERSONAL_ARCHIVE_API_KEY not set. ' +
+      'Generate one at https://vps-a9517071.vps.ovh.net/settings/api-keys\n',
+  );
+}
 
 export async function apiCall(path: string, options: RequestInit = {}): Promise<unknown> {
   const res = await fetch(`${API_URL}/api${path}`, {

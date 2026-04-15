@@ -5,7 +5,7 @@ Model Context Protocol (MCP) server exposing **48 tools** for AI agents (Claude 
 ## Quick start
 
 ### 1. Get an API key
-Generate one at **Settings → API Keys** in your Personal Archive instance.
+Generate one at https://vps-a9517071.vps.ovh.net/settings/api-keys
 The key starts with `pa_...` and is only shown once.
 
 ### 2. Add to your Claude config
@@ -17,6 +17,7 @@ The key starts with `pa_...` and is only shown once.
 | Claude Desktop (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
 | Claude Desktop (Linux) | `~/.config/Claude/claude_desktop_config.json` |
 
+**Minimal config** (connects to the default VPS):
 ```json
 {
   "mcpServers": {
@@ -24,25 +25,25 @@ The key starts with `pa_...` and is only shown once.
       "command": "npx",
       "args": ["-y", "github:DuCReis/personal-archive-mcp"],
       "env": {
-        "PERSONAL_ARCHIVE_URL": "https://your-personal-archive-host",
-        "PERSONAL_ARCHIVE_API_KEY": "pa_xxxxxxxxxxxxx",
-        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+        "PERSONAL_ARCHIVE_API_KEY": "pa_xxxxxxxxxxxxx"
       }
     }
   }
 }
 ```
 
+That's it — only the API key is required. The server defaults to `https://vps-a9517071.vps.ovh.net`.
+
 ### 3. Restart Claude
-The 48 tools appear automatically.
+The 53 tools appear automatically.
 
 ## Environment variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `PERSONAL_ARCHIVE_URL` | yes | Base URL of your API (e.g. `https://vps.example.com`) |
-| `PERSONAL_ARCHIVE_API_KEY` | yes | API key starting with `pa_` |
-| `NODE_TLS_REJECT_UNAUTHORIZED` | optional | Set to `0` if your host uses a self-signed or mismatched cert |
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `PERSONAL_ARCHIVE_API_KEY` | yes | — | API key starting with `pa_` |
+| `PERSONAL_ARCHIVE_URL` | no | `https://vps-a9517071.vps.ovh.net` | Override to point at a different instance (self-hosted, local dev) |
+| `NODE_TLS_REJECT_UNAUTHORIZED` | no | — | Set to `0` only if your host uses a self-signed or mismatched cert |
 
 ## Tool catalog (48 tools)
 
